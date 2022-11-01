@@ -2,11 +2,10 @@ from http import HTTPStatus
 from flask import Flask, abort, request, send_from_directory, make_response, render_template
 from werkzeug.datastructures import WWWAuthenticate
 import flask
-from login_form import LoginForm
+import secrets
+from Login.login_form import LoginForm
 from json import dumps, loads
 from base64 import b64decode
-import sys
-import apsw
 from apsw import Error
 from pygments import highlight
 from pygments.lexers import SqlLexer
@@ -15,16 +14,19 @@ from pygments.filters import NameHighlightFilter, KeywordCaseFilter
 from pygments import token;
 from threading import local
 from markupsafe import escape
+import Functions.hashFunction as hashPassword
+import Functions.dbFunction as initializeDb
+import Logic.login_logic as login_logic
 
 tls = local()
-inject = "'; insert into messages (sender,message) values ('foo', 'bar');select '"
 cssData = HtmlFormatter(nowrap=True).get_style_defs('.highlight')
-conn = None
+conn = initializeDb.run()
 
 # Set up app
 app = Flask(__name__)
-# The secret key enables storing encrypted session data in a cookie (make a secure random key for this!)
-app.secret_key = 'mY s3kritz'
+
+# The secret key enables storing encrypted session data in a cookie 
+app.secret_key = secrets.token_hex(32)
 
 # Add a login manager to the app
 import flask_login
@@ -39,8 +41,8 @@ users = {'alice' : {'password' : 'password123', 'token' : 'tiktok'},
          }
 
 # Class to store user info
-# UserMixin provides us with an `id` field and the necessary
-# methods (`is_authenticated`, `is_active`, `is_anonymous` and `get_id()`)
+# UserMixin provides us with an id field and the necessary
+# methods (is_authenticated, is_active, is_anonymous and get_id())
 class User(flask_login.UserMixin):
     pass
 
@@ -49,9 +51,6 @@ class User(flask_login.UserMixin):
 # the User object for a given user id
 @login_manager.user_loader
 def user_loader(user_id):
-    if user_id not in users:
-        return
-
     # For a real app, we would load the User from a database or something
     user = User()
     user.id = user_id
@@ -63,8 +62,8 @@ def user_loader(user_id):
 # than getting the user name the standard way (from the session cookie)
 @login_manager.request_loader
 def request_loader(request):
-    # Even though this HTTP header is primarily used for *authentication*
-    # rather than *authorization*, it's still called "Authorization".
+    # Even though this HTTP header is primarily used for authentication
+    # rather than authorization, it's still called "Authorization".
     auth = request.headers.get('Authorization')
 
     # If there is not Authorization header, do nothing, and the login
@@ -120,6 +119,17 @@ def favicon_ico():
 def favicon_png():
     return send_from_directory(app.root_path, 'favicon.png', mimetype='image/png')
 
+@app.route('/index.js')
+def index_js():
+    return send_from_directory(app.root_path, 'index.js', mimetype='text/javascript')
+
+@app.route('/index.css')
+def index_css():
+    return send_from_directory(app.root_path, 'index.css', mimetype='text/css')
+
+@app.route('/createUser.html', methods=['POST','GET'])
+def create_user():
+    return render_template("createUser.html")
 
 @app.route('/')
 @app.route('/index.html')
@@ -131,41 +141,16 @@ def index_html():
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     form = LoginForm()
-    if form.is_submitted():
-        print(f'Received form: {"invalid" if not form.validate() else "valid"} {form.form_errors} {form.errors}')
-        print(request.form)
-    if form.validate_on_submit():
-        # TODO: we must check the username and password
-        username = form.username.data
-        password = form.password.data
-        u = users.get(username)
-        if u: # and check_password(u.password, password):
-            user = user_loader(username)
-            
-            # automatically sets logged in session cookie
-            login_user(user)
-
-            flask.flash('Logged in successfully.')
-
-            next = flask.request.args.get('next')
-    
-            # is_safe_url should check if the url is safe for redirects.
-            # See http://flask.pocoo.org/snippets/62/ for an example.
-            if False and not is_safe_url(next):
-                return flask.abort(400)
-
-            return flask.redirect(next or flask.url_for('index'))
-    return render_template('./login.html', form=form)
+    return (login_logic.login(conn,form));
 
 @app.get('/search')
 def search():
     query = request.args.get('q') or request.form.get('q') or '*'
     stmt = f"SELECT * FROM messages WHERE message GLOB '{query}'"
-    result = f"Query: {pygmentize(stmt)}\n"
     try:
         c = conn.execute(stmt)
         rows = c.fetchall()
-        result = result + 'Result:\n'
+        result = 'Result:\n'
         for row in rows:
             result = f'{result}    {dumps(row)}\n'
         c.close()
@@ -180,12 +165,10 @@ def send():
         message = request.args.get('message') or request.args.get('message')
         if not sender or not message:
             return f'ERROR: missing sender or message'
-        stmt = f"INSERT INTO messages (sender, message) values ('{sender}', '{message}');"
-        result = f"Query: {pygmentize(stmt)}\n"
-        conn.execute(stmt)
-        return f'{result}ok'
+        conn.execute('INSERT INTO messages (sender, message) VALUES (?, ?)', (sender, message))
+        return f'Message sent!'
     except Error as e:
-        return f'{result}ERROR: {e}'
+        return f'ERROR: {e}'
 
 @app.get('/announcements')
 def announcements():
@@ -213,17 +196,3 @@ def highlightStyle():
     resp.content_type = 'text/css'
     return resp
 
-try:
-    conn = apsw.Connection('./tiny.db')
-    c = conn.cursor()
-    c.execute('''CREATE TABLE IF NOT EXISTS messages (
-        id integer PRIMARY KEY, 
-        sender TEXT NOT NULL,
-        message TEXT NOT NULL);''')
-    c.execute('''CREATE TABLE IF NOT EXISTS announcements (
-        id integer PRIMARY KEY, 
-        author TEXT NOT NULL,
-        text TEXT NOT NULL);''')
-except Error as e:
-    print(e)
-    sys.exit(1)
