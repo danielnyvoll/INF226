@@ -3,8 +3,8 @@ from apsw import Error
 
 
 def searchInMessage(request,conn):
-    query = request.args.get('q') or request.form.get('q') or '*'
-    stmt = f"SELECT * FROM messages WHERE message GLOB '{query}'"
+    query = request.args.get('q') or request.form.get('q')
+    stmt = f"SELECT * FROM messages WHERE receiver GLOB '{query}'"
     try:
         c = conn.execute(stmt)
         rows = c.fetchall()

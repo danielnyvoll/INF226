@@ -10,7 +10,8 @@ def run():
             id integer PRIMARY KEY, 
             sender TEXT NOT NULL,
             message TEXT NOT NULL,
-            receiver TEXT NOT NULL);''')
+            receiver TEXT NOT NULL,
+            time TEXT NOT NULL);''')
         c.execute('''CREATE TABLE IF NOT EXISTS announcements (
             id integer PRIMARY KEY, 
             author TEXT NOT NULL,
