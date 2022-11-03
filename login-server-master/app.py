@@ -1,8 +1,10 @@
 from http import HTTPStatus
-from flask import Flask, abort, request, send_from_directory, make_response, render_template
+from flask import Flask, Response, abort, request, send_from_directory, make_response, render_template, session
 from werkzeug.datastructures import WWWAuthenticate
 import flask
 import secrets
+
+from zmq import NULL
 from Login.login_form import LoginForm
 from json import dumps, loads
 from base64 import b64decode
@@ -16,7 +18,14 @@ from threading import local
 from markupsafe import escape
 import Functions.hashFunction as hashPassword
 import Functions.dbFunction as initializeDb
-import Logic.login_logic as login_logic
+from Login.login_logic import login as loginUser
+import Login.login_logic as login_logic
+from Register.registrer import makeUser
+from Register.register_form import RegisterForm
+from flask_wtf.csrf import CSRFProtect
+from Messages.send_message import sendMessage
+from Messages.search_messages import searchInMessage
+from Messages.announcements_messages import checkAnnouncements
 
 tls = local()
 cssData = HtmlFormatter(nowrap=True).get_style_defs('.highlight')
@@ -24,13 +33,14 @@ conn = initializeDb.run()
 
 # Set up app
 app = Flask(__name__)
+csrf = CSRFProtect(app)
 
 # The secret key enables storing encrypted session data in a cookie 
 app.secret_key = secrets.token_hex(32)
 
 # Add a login manager to the app
 import flask_login
-from flask_login import login_required, login_user
+from flask_login import fresh_login_required, login_remembered, login_required, login_user, logout_user
 login_manager = flask_login.LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = "login"
@@ -40,11 +50,18 @@ users = {'alice' : {'password' : 'password123', 'token' : 'tiktok'},
          'bob' : {'password' : 'bananas'}
          }
 
+def getUserNames():
+    names = conn.execute('SELECT userName FROM users').fetchall()
+    accountnames = []
+    for name in names:
+        accountnames.append(name[0])
+        print("NAMES:" + name[0])
+    return accountnames
 # Class to store user info
 # UserMixin provides us with an id field and the necessary
 # methods (is_authenticated, is_active, is_anonymous and get_id())
 class User(flask_login.UserMixin):
-    pass
+    possibleReceivers = []
 
 
 # This method is called whenever the login manager needs to get
@@ -54,6 +71,8 @@ def user_loader(user_id):
     # For a real app, we would load the User from a database or something
     user = User()
     user.id = user_id
+    user.possibleReceivers = getUserNames()
+    session["username"] = user_id
     return user
 
 
@@ -121,11 +140,11 @@ def favicon_png():
 
 @app.route('/index.js')
 def index_js():
-    return send_from_directory(app.root_path, 'index.js', mimetype='text/javascript')
+    return send_from_directory(app.root_path, 'templates/index.js', mimetype='text/javascript')
 
 @app.route('/index.css')
 def index_css():
-    return send_from_directory(app.root_path, 'index.css', mimetype='text/css')
+    return send_from_directory(app.root_path, 'templates/index.css', mimetype='text/css')
 
 @app.route('/createUser.html', methods=['POST','GET'])
 def create_user():
@@ -135,52 +154,44 @@ def create_user():
 @app.route('/index.html')
 @login_required
 def index_html():
-    return send_from_directory(app.root_path,
-                        'index.html', mimetype='text/html')
+    return render_template("index.html")
+    #return send_from_directory(app.root_path,
+                       # 'index.html', mimetype='text/html')
+
+@app.route('/register.html', methods=['GET', 'POST'])
+def register():
+    form = RegisterForm()
+    username = form.username.data
+    password = form.password.data
+    if form.validate_on_submit():
+        if(makeUser(username, password,conn)):
+            return flask.redirect(flask.url_for('login'))
+    return render_template("register.html", form=form)
+
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     form = LoginForm()
-    return (login_logic.login(conn,form));
+    return loginUser(conn,form);
+
+@app.route('/logout', methods=['GET', 'POST'])
+@login_required
+def logout():
+    logout_user()
+    session.pop('username', None)
+    return flask.redirect(flask.url_for('index_html'))
 
 @app.get('/search')
 def search():
-    query = request.args.get('q') or request.form.get('q') or '*'
-    stmt = f"SELECT * FROM messages WHERE message GLOB '{query}'"
-    try:
-        c = conn.execute(stmt)
-        rows = c.fetchall()
-        result = 'Result:\n'
-        for row in rows:
-            result = f'{result}    {dumps(row)}\n'
-        c.close()
-        return result
-    except Error as e:
-        return (f'{result}ERROR: {e}', 500)
+    return searchInMessage(request,conn)
 
 @app.route('/send', methods=['POST','GET'])
 def send():
-    try:
-        sender = request.args.get('sender') or request.form.get('sender')
-        message = request.args.get('message') or request.args.get('message')
-        if not sender or not message:
-            return f'ERROR: missing sender or message'
-        conn.execute('INSERT INTO messages (sender, message) VALUES (?, ?)', (sender, message))
-        return f'Message sent!'
-    except Error as e:
-        return f'ERROR: {e}'
+    return sendMessage(request,conn)
 
 @app.get('/announcements')
 def announcements():
-    try:
-        stmt = f"SELECT author,text FROM announcements;"
-        c = conn.execute(stmt)
-        anns = []
-        for row in c:
-            anns.append({'sender':escape(row[0]), 'message':escape(row[1])})
-        return {'data':anns}
-    except Error as e:
-        return {'error': f'{e}'}
+    return checkAnnouncements(conn)
 
 @app.get('/coffee/')
 def nocoffee():
@@ -195,4 +206,7 @@ def highlightStyle():
     resp = make_response(cssData)
     resp.content_type = 'text/css'
     return resp
-
+@app.after_request
+def add_security_headers(resp):
+    resp.headers['Content-Security-Policy']='default-src \'self\''
+    return resp

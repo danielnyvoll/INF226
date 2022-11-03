@@ -1,12 +1,3 @@
-<!DOCTYPE html>
-<html>
-
-<head>
-    <title>INF226 Tiny Login</title>
-    <link rel="stylesheet" href="highlight.css" />
-	<link rel="icon" href="favicon.png" type="image/png" />
-
-    <style>
         * {
             box-sizing: border-box;
             ;
@@ -69,32 +60,7 @@
 
         #header li {
             display: block;
-            font-style: italic;
             font-size: 1.2rem;
             padding: .25rem;
             margin:0 1rem;
         }
-    </style>
-
-</head>
-
-<body>
-    <div id="page">
-    <form action="" method=post>
-  <dl>
-      {{ form.csrf_token }}
-      
-    <dt>Username:
-    <dd>{{ form.username }}
-    <dt>Password:
-    <dd>{{ form.password }}
-  </dl>
-  <p>
-    <input type=submit value=Login>
-    <input type=hidden value="{{ next or '' }}" name=next>
-</form>
-<a href="./register.html">make user</a>
-
-    </div>
-</body>
-</html>

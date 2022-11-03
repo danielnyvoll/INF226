@@ -1,4 +1,4 @@
-from flask_login import login_user
+from flask_login import confirm_login, login_user
 import flask_login
 import app as app
 import Functions.hashFunction as hashPassword
@@ -11,7 +11,6 @@ import Functions.dbFunction as db
 import Functions.hashFunction as hashPassword
 
 def login(conn,form):
-    print("KJØRR")
     if form.is_submitted():
             print(f'Received form: {"invalid" if not form.validate() else "valid"} {form.form_errors} {form.errors}')
             print(request.form)
@@ -30,14 +29,13 @@ def login(conn,form):
                 user = app.user_loader(username)
                 # automatically sets logged in session cookie
                 app.login_user(user)
-
+                confirm_login()
                 flask.flash('Logged in successfully.')
                 next = flask.request.args.get('next')
-                print("HEYEHEYEYHEYEHYEHEYE")
                 # is_safe_url should check if the url is safe for redirects.
                 # See http://flask.pocoo.org/snippets/62/ for an example.
                 if False and not is_safe_url(next):
                     return flask.abort(400)
 
-                return flask.redirect(next or flask.url_for('index'), variable=username)
-    return render_template('./index.html', form=form, variable=username)
+                return flask.redirect(next or flask.url_for('index_html'))
+    return render_template('./login.html', form=form)

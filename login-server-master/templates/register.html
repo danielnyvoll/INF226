@@ -79,22 +79,20 @@
 </head>
 
 <body>
+    <h1>HEI OG HOPP</h1>
     <div id="page">
     <form action="" method=post>
   <dl>
       {{ form.csrf_token }}
-      
+      <h2>Make User</h2>
     <dt>Username:
     <dd>{{ form.username }}
     <dt>Password:
     <dd>{{ form.password }}
   </dl>
   <p>
-    <input type=submit value=Login>
+    <input type=submit value=Register>
     <input type=hidden value="{{ next or '' }}" name=next>
 </form>
-<a href="./register.html">make user</a>
-
     </div>
 </body>
-</html>
