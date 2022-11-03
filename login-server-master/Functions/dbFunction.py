@@ -21,7 +21,7 @@ def run():
             password TEXT NOT NULL,
             salt TEXT NOT NULL);''')
         
-       # c.execute('INSERT INTO users (username, password, salt) VALUES (?, ?, ?)', ('bob','d361a1eaf733a3ef1eacd4c1d4db259d8ac0f0dc7e4556615208bbf688b1d9aa4245a18a11c745e7883fbe956560e268d439476b95229a629e46ffb21f04072a','040b7e536674a317ae7c98a31958a5f7'))
+        c.execute('INSERT INTO users (username, password, salt) VALUES (?, ?, ?)', ('bob','d361a1eaf733a3ef1eacd4c1d4db259d8ac0f0dc7e4556615208bbf688b1d9aa4245a18a11c745e7883fbe956560e268d439476b95229a629e46ffb21f04072a','040b7e536674a317ae7c98a31958a5f7'))
         return conn
     except Error as e:
         print(e)
