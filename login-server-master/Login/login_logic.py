@@ -9,6 +9,7 @@ import flask
 from Login.login_form import LoginForm
 import Functions.dbFunction as db
 import Functions.hashFunction as hashPassword
+from Functions.checkSafeUrlFunction import checkIfSafeURL
 
 def login(conn,form):
     if form.is_submitted():
@@ -34,7 +35,7 @@ def login(conn,form):
                 next = flask.request.args.get('next')
                 # is_safe_url should check if the url is safe for redirects.
                 # See http://flask.pocoo.org/snippets/62/ for an example.
-                if False and not is_safe_url(next):
+                if not checkIfSafeURL(next):
                     return flask.abort(400)
 
                 return flask.redirect(next or flask.url_for('index_html'))
