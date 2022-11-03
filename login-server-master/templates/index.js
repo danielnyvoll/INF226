@@ -12,35 +12,27 @@ var output = document.getElementById('output');
 var header = document.getElementById('header');
 var csrftoken = document.getElementById('csrf_token').value
 
-
-var checkAnnouncements = async () => {
-    res = await fetch('/announcements');
-    anns = await res.json();
-    if (anns && Array.isArray(anns.data)) {
-        const elts = [];
-        anns.data.forEach((element, idx) => {
-            if (idx > 0) {
-                const node = document.createElement('li');
-                node.textContent = '  …  ';
-                elts.push(node);
-            }
-            const node = document.createElement('li');
-            node.textContent = `${element.message || ''}`;
-            elts.push(node);
-        });
-        header.replaceChildren(...elts);
-    }
-};
-var search = async (query) => {
+var getMessages = async (query) => {
     const id = reqId++;
-    const q = `/search?q=${encodeURIComponent(query)}`;
+    const q = `/getmessages?q=${encodeURIComponent(query)}`;
     res = await fetch(q);
     const body = document.createElement('p');
     body.innerHTML = await res.text();
     output.appendChild(body);
     body.scrollIntoView({block: "end", inline: "nearest", behavior: "smooth"});
     anchor.scrollIntoView();
-    checkAnnouncements();
+}
+
+
+var search = async (query) => {
+    const id = reqId++;
+    const q = `/search?q=${encodeURIComponent(query)}&receiver=${encodeURIComponent(receiver)}`;
+    res = await fetch(q);
+    const body = document.createElement('p');
+    body.innerHTML = await res.text();
+    output.appendChild(body);
+    body.scrollIntoView({block: "end", inline: "nearest", behavior: "smooth"});
+    anchor.scrollIntoView();
 };
 var send = async (sender, message, receiver) => {
     const id = reqId++;
@@ -53,7 +45,6 @@ var send = async (sender, message, receiver) => {
     output.appendChild(body); 
     body.scrollIntoView({block: "end", inline: "nearest", behavior: "smooth"});
     anchor.scrollIntoView();
-    checkAnnouncements();
 };
 
 // Method for fetching logout function and restrict going back to app without being loged in
@@ -69,8 +60,8 @@ searchField.addEventListener('keydown', ev => {
         search(searchField.value);
     }
 });
-searchBtn.addEventListener('click', () => search(searchField.value));
-allBtn.addEventListener('click', () => search(senderField.value));
+searchBtn.addEventListener('click', () => search(senderField.value));
+allBtn.addEventListener('click', () => getMessages(senderField.value));
 sendBtn.addEventListener('click', () => send(senderField.value, messageField.value, receiverField.value));
 logoutBtn.addEventListener('click', () => logout())
 checkAnnouncements();

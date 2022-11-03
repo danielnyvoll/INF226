@@ -17,7 +17,7 @@ from Register.register_form import RegisterForm
 from flask_wtf.csrf import CSRFProtect
 from Messages.send_message import sendMessage
 from Messages.search_messages import searchInMessage
-from Messages.announcements_messages import checkAnnouncements
+from Messages.getMessages_messages import getMessages
 from Functions.checkSafeUrlFunction import checkIfSafeURL
 
 tls = local()
@@ -34,9 +34,8 @@ app.config.update(
 )
 csrf = CSRFProtect(app)
 
-
 # The secret key enables storing encrypted session data in a cookie 
-app.secret_key = secrets.token_hex(32)
+app.secret_key = secrets.token_hex(128)
 
 # Add a login manager to the app
 import flask_login
@@ -51,7 +50,6 @@ def getUserNames():
     accountnames = []
     for name in names:
         accountnames.append(name[0])
-        print("NAMES:" + name[0])
     return accountnames
 
 # Class to store user info
@@ -102,9 +100,10 @@ def register():
     if form.validate_on_submit():
         if(makeUser(username, password,conn)):
             next = flask.request.args.get('next')
-            if(not checkIfSafeURL(next)):
-                return abort(400)
-            return flask.redirect(flask.url_for('login'))
+            if(recaptcha.verify()):
+                if(not checkIfSafeURL(next)):
+                    return abort(400)
+                return flask.redirect(flask.url_for('login'))
     return render_template("register.html", form=form)
 
 
@@ -121,16 +120,19 @@ def logout():
     return flask.redirect(flask.url_for('index_html'))
 
 @app.get('/search')
+@login_required
 def search():
     return searchInMessage(request,conn)
 
 @app.route('/send', methods=['POST','GET'])
+@login_required
 def send():
     return sendMessage(request,conn)
 
-@app.get('/announcements')
+@app.get('/getmessages')
+@login_required
 def announcements():
-    return checkAnnouncements(conn)
+    return getMessages(request,conn)
 
 @app.get('/coffee/')
 def nocoffee():

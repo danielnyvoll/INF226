@@ -14,15 +14,12 @@ from Functions.checkSafeUrlFunction import checkIfSafeURL
 def login(conn,form):
     if form.is_submitted():
             print(f'Received form: {"invalid" if not form.validate() else "valid"} {form.form_errors} {form.errors}')
-            print(request.form)
     if form.validate_on_submit():
             username = form.username.data.lower() # Lowers the username as usernames often are not case sensetive
             password = form.password.data
             try:
                 uPassword = conn.execute('SELECT password FROM users WHERE userName=?', (username,)).fetchall()[0][0] #Extracting users password from database
                 salt = conn.execute('SELECT salt FROM users WHERE userName=?', (username,)).fetchall()[0][0] # Extracting users salt from database
-                print(uPassword)
-                print(salt)
             except IndexError as e: # If username not in database return to index page
                 return render_template('./login.html', form=form)
             password = hashPassword.getHashedPassword(password, salt) #Hash the input password with correct salt

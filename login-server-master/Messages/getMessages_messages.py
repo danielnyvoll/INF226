@@ -1,12 +1,13 @@
+from apsw import Error
+from flask import escape
 from json import dumps
 from apsw import Error
 
 
-def searchInMessage(request,conn):
-    word = request.args.get('q') or request.form.get('q')
-    receiver = request.args.get('receiver') or request.form.get('receiver')
+def getMessages(request,conn):
+    receiver = request.args.get('q') or request.form.get('q')
     try:
-        c = conn.execute('SELECT * FROM messages WHERE message LIKE ? AND receiver = ?',(word,receiver) )
+        c = conn.execute('SELECT * FROM messages WHERE receiver = ?',(receiver,))
         rows = c.fetchall()
         result = 'Result:\n'
         for row in rows:

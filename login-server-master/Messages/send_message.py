@@ -7,7 +7,6 @@ def sendMessage(request,conn):
         message = request.args.get('message') or request.form.get('message')
         receiver = request.args.get('receiver') or request.form.get('receiver')
         time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        print(time)
         if not sender:
             return f'ERROR: missing sender'
         if not message:
