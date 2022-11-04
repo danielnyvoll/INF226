@@ -65,9 +65,9 @@ Kanskje den featuren jeg brukte lengst tid på å lage. Slet lenge med at du kun
 
 ## Hvordan kjøre applikasjonen
 
-Applikasjonen kjører ved bruk av kommandoen «flask run» selv om jeg hadde problemer med denne kommandoen så måtte jeg kjøre prosjektet med «python3 -m flask run» dette kan høre sammen med at jeg har en eldgammel mac (2013-modell :P). Jeg har kun generert en bruker: bob med passord: bananas
+Applikasjonen kjører ved bruk av kommandoen «flask run» selv om jeg hadde problemer med denne kommandoen så måtte jeg kjøre prosjektet med «python3 -m flask run» dette kan høre sammen med at jeg har en eldgammel mac (2013-modell :P). Husk at du må være i riktig mappe når du kjører prosjektet. Dette må du gjøre før du bruker "flask run" kommandoen. Du skriver da "cd login-server-master". Det er ingen standard brukere registrert så det er nødvendig og registrere bruker først. Da har du mulighet til å sende deg selv en melding. Så hvis du vil sende en melding til noen andre er du avhengig av å opprette minst to brukere.
 
-Hvis du vil sende melding til noen andre enn deg selv blir du derfor nødt til å benytte deg av registreringsskjemaet før du logger deg inn. Bare sørg for at brukernavn har mere enn 2 tegn og passord har 9 eller flere. Det dukker dessverre ikke opp hvilke feilmeldinger som skulle oppstå på hvorfor du ikke får opprettet bruker. Dette gjelder også ved innlogging. Skulle gjerne vist en rød tekst med passord er feil eller passord er for svakt eller brukernavn er allerede tatt. Anbefaler å teste meldingsfunksjonaliteten og spesielt search knappen hvor jeg ikke er 100% sikker på om det er bombesikkert for sql-injection. Selv om jeg har gjort det umulig for både sql og xss angrep etter boka.
+Bare sørg for at brukernavn har mere enn 2 tegn og passord har 9 eller flere. Det dukker dessverre ikke opp hvilke feilmeldinger som skulle oppstå på hvorfor du ikke får opprettet bruker. Dette gjelder også ved innlogging. Skulle gjerne vist en rød tekst med passord er feil eller passord er for svakt eller brukernavn er allerede tatt. Anbefaler å teste meldingsfunksjonaliteten og spesielt search knappen hvor jeg ikke er 100% sikker på om det er bombesikkert for sql-injection. Selv om jeg har gjort det umulig for både sql og xss angrep etter boka.
 
 ## Tekniske detaljer til prosjektet
 
