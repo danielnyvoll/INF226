@@ -100,10 +100,9 @@ def register():
     if form.validate_on_submit():
         if(makeUser(username, password,conn)):
             next = flask.request.args.get('next')
-            if(recaptcha.verify()):
-                if(not checkIfSafeURL(next)):
-                    return abort(400)
-                return flask.redirect(flask.url_for('login'))
+            if(not checkIfSafeURL(next)):
+                return abort(400)
+            return flask.redirect(flask.url_for('login'))
     return render_template("register.html", form=form)
 
 
